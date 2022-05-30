@@ -31,9 +31,9 @@
       value: 64000
   when: pritunl_increase_open_limit_file
 
-- name: start mongodb
+- name: start mongod
   service:
-    name: mongodb
+    name: mongod
     state: started
     enabled: yes
   when: not pritunl_mongodb_external and pritunl_mongodb_version is defined

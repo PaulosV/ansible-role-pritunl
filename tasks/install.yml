@@ -1,43 +1,37 @@
 ---
-- name: Add mongodb apt repository
-  apt_repository:
-    repo: deb http://repo.mongodb.org/apt/ubuntu xenial/mongodb-org/{{ pritunl_mongodb_version }} multiverse
-    filename: "mongodb-org-{{ pritunl_mongodb_version }}"
-    state: present
+- name: Add EPEL repository
+  dnf:
+    name: epel-release
+    state: latest
   when: not pritunl_mongodb_external and pritunl_mongodb_version is defined
 
-- name: Check if pritunl is installed
-  shell: dpkg -l pritunl | grep '^ii'
-  register: pritunl_check_deb
-  failed_when: pritunl_check_deb.rc > 1
-  changed_when: pritunl_check_deb.rc == 1
+- name: Add MongoDB repository
+  yum_repository:
+    name: mongodb-5.0
+    description: MongoDB 5.0 YUM repo
+    baseurl: https://repo.mongodb.org/yum/redhat/8/mongodb-org/5.0/x86_64/
+    gpgkey: https://www.mongodb.org/static/pgp/server-5.0.asc
 
-- name: Update package lists
-  apt: update_cache=yes
+- name: Add Pritunl repository
+  yum_repository:
+    name: pritunl
+    description: Pritunl YUM repo
+    baseurl: https://repo.pritunl.com/stable/yum/oraclelinux/8/
+    gpgkey: https://raw.githubusercontent.com/pritunl/pgp/master/pritunl_repo_pub.asc
 
 - name: Install mongodb
-  apt:
-    name: mongodb
-    state: latest
-    update_cache: no
+  dnf:
+    name: mongodb-org
+    state: installed    
   when: not pritunl_mongodb_external and pritunl_mongodb_version is defined
 
-- block:
-  - name: Ensures pritunl dependencies are installed
-    apt:
-      name: "{{ item }}"
-      state: latest
-      update_cache: no
-    with_items:
-      - python
-      - net-tools
-      - openvpn
-      - openssl
-      - bridge-utils
-      - ca-certificates
+- name: Install pritunl
+  dnf:
+    name: pritunl
+    state: installed
 
-  - name: Download and install pritunl v{{ pritunl_version }}
-    apt:
-      deb: "https://github.com/pritunl/pritunl/releases/download/{{ pritunl_version }}/pritunl_{{ pritunl_version }}-0ubuntu1.focal_amd64.deb"
-
-  when: pritunl_check_deb.rc == 1
+- name: Install pritunl-openvpn
+  dnf:
+    name: pritunl-openvpn
+    state: installed
+    allowerasing: yes
